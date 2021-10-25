@@ -1,11 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>     
 #include <string.h>     
-#include "lectura.h" 
+#include "lectura.h"
 #include <signal.h>
-
+node HEAD=NULL;//list of jobs
 void sigtstp_handler(int sig){
     char msg[] = "caught sigtstp\n";
+    if(HEAD!=NULL){
+        int size=getSize(HEAD);
+        node aux=getNode(HEAD, size);
+        kill(aux->pid,SIGTSTP );
+    }
+
     write(1, msg, sizeof(msg));
     return;
 }
@@ -23,7 +29,7 @@ void shellLoop(void)
         char * command_line;
         char *s;
         char ** arguments ;//puntero de argumentos
-        node head=NULL;//list of jobs
+        
 
         
 
@@ -41,11 +47,11 @@ void shellLoop(void)
 			    continue;
 		}
             arguments = splitLine(command_line);//obtengo los argumentos
-            status = consolaEjecuta(arguments,&head);
+            status = consolaEjecuta(arguments,&HEAD);
             free(*arguments);
             free(arguments);    
         }
-        free(head);
+        free(HEAD);
 }
 
 char * readCommandLine(void){

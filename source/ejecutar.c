@@ -116,7 +116,7 @@ int consolaByeBye(char **args,node* head)
 
 
   }
-  free(*head); 
+  if(*head != NULL) free(*head); 
   return 0;
 }
 int consolaStart(char **args,node *head)
