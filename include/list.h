@@ -5,6 +5,8 @@
 #include <string.h>
 #include <sys/wait.h>
 
+enum status{running, stopped} status;
+
 typedef struct JID // JOB I D 
 { 
    int status;//status

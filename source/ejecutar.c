@@ -6,7 +6,6 @@
 #include "ejecutar.h"
 
 char PWD[1024];		// Directorio de trabajo actual
-enum status{running, stopped} status;
 
 int lanzador(char **args,node *head)
 {
@@ -32,6 +31,7 @@ int lanzador(char **args,node *head)
     int size=getSize(head);
     addNode(head, running,size+1,pid,args);
     size++;
+    node aux=getNode(head, size);
     /*
     * Proceso padre espera hasta que haya finalizado
     * O porque  una señal
@@ -39,10 +39,12 @@ int lanzador(char **args,node *head)
     do 
     {
       wpid = waitpid(pid, &status, WUNTRACED);
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    size=getSize(head);
-    deletePos(head,size);
-    size--;
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status) &&  aux->status != stopped);
+    if(aux->status != stopped){
+        size=getSize(head);
+        deletePos(head,size);
+        size--;
+    }
 
   }
   //retorna 1 para que pueda seguir en el loop de consola
@@ -68,9 +70,11 @@ int (*comandosFunc[]) (char **,node *head) = {
   &consolaByeBye,
   &consolaStart,
   &consolaLs,
-  &consolaBackground,
+  &bg,
   &consolaKill,
-  &consolaJobs
+  &consolaJobs,
+  &consolaBackground
+
 };
 int numeroComandos() 
 {
@@ -100,7 +104,7 @@ int consolaByeBye(char **args,node* head)
   pid_t wpid;
   int status=1;
   int size=getSize(head);
-  for (int i = 0; i < size; i++)
+  for (int i = 1; i < size+1; i++)
   {
     node aux=getNode(head, i);
     if (aux->status==stopped){
@@ -113,6 +117,7 @@ int consolaByeBye(char **args,node* head)
     else{
        kill(aux->pid, SIGHUP);
     }
+    deletePos(head,i);
 
 
   }
@@ -133,18 +138,34 @@ int consolaEjecuta(char **args,node *head)
     // No hay comandos
     return 1;
   }
-  if(strchr(args[0], '/') != NULL){
-    command=2; // if only have a direction then run the programn
-  }
-  else{
-    for (i = 0; i < numeroComandos(); i++) {
-      if (strcmp(args[0], comandosStr[i]) == 0) {// else then find the right command
-          command=i;
-          args++;
-          break;
+
+    // loop through the string to extract all other tokens
+    char **aux= args;
+
+    if(strchr(args[0], '/') != NULL){
+      command=2; // if only have a direction then run the programn
+      while(*aux!=NULL){
+        if(strchr(*aux, '&') != NULL){
+            command=7; // if only have a direction then run the programn
+            removeChar(**args,'&');
+            break;
+        }
+        else{
+          aux++;
+        }
+        
       }
+
+    }    
+    else{
+          for (i = 0; i < numeroComandos(); i++) {
+            if (strcmp(args[0], comandosStr[i]) == 0) {// else then find the right command
+              command=i;
+              args++;
+              break;
+            }
+          }
     }
-  }
   if(command != -1){
     return (*comandosFunc[command])(args,head);//lanzo la funcion de los comandos internos
   }
@@ -220,10 +241,10 @@ int consolaKill(char **args,node *head)
 }
 int consolaJobs(char **args,node *head){
   int size=getSize(head);
-  for (int i = 0; i < size; i++)
+  for (int i = 1; i < size+1; i++)
   {
     node aux=getNode(head, i);
-    if(aux->status=running){
+    if(aux->status == running){
       char s2[] = ": Running\n";
       printf("[%d] %d %s %s \n",aux->pos,aux->pid,s2,aux->hist);
     }
@@ -234,4 +255,33 @@ int consolaJobs(char **args,node *head){
     }
    
   return 1;
+}
+int bg(char **args,node *head)
+{
+  pid_t wpid;
+  int status=1;
+  int pos=atoi(*args);
+  node aux=getNode(head, pos);
+  if( kill(aux->pid, SIGCONT)==0)//try to term
+  {
+    aux->status=running;
+  }
+  else
+  {
+    printf("The process %d can't continue \n",aux->pid);
+  }
+
+  return 1;
+}
+
+void removeChar(char* s, char c)
+{
+ 
+    int j, n = strlen(s);
+    for (int i = j = 0; i < n; i++){
+        if (s[i] != c){
+            s[j++] = s[i];
+        }
+    }
+    s[j] = '\0';
 }

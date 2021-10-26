@@ -7,19 +7,18 @@ node HEAD=NULL;//list of jobs
 void sigtstp_handler(int sig){
     char msg[] = "caught sigtstp\n";
     if(HEAD!=NULL){
-        int size=getSize(HEAD);
-        node aux=getNode(HEAD, size);
+        int size=getSize(&HEAD);
+        node aux=getNode(&HEAD, size);
+        aux->status=stopped;
         kill(aux->pid,SIGTSTP );
     }
 
     write(1, msg, sizeof(msg));
-    return;
 }
 
 void sigint_handler(int sig){
     char msg[] = "caught sigint\n";
     write(1, msg, sizeof(msg));
-    return;
 }
 
 void shellLoop(void)
@@ -51,7 +50,8 @@ void shellLoop(void)
             free(*arguments);
             free(arguments);    
         }
-        free(HEAD);
+        //if(HEAD != NULL) free(HEAD); 
+        //free(HEAD);
 }
 
 char * readCommandLine(void){

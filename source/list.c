@@ -19,8 +19,11 @@ void addNode(node *head, int status, int pos, pid_t pid,char **args){
     temp->status = status; // add element's value to data part of node
     temp->pos = pos; // add element's value to data part of node
     temp->pid = pid; // add element's value to data part of node
-    strcmp(args, temp->hist);
-    temp->hist=stringcopywithpointer(*args);//copio la string de comando
+
+    int len = strlen(*args);
+    temp->hist = malloc(len+1);
+    strcpy(temp->hist, *args);
+
 
     if( *head== NULL){
         *head = temp;     //when linked list is empty
@@ -69,7 +72,7 @@ node getNode(node* head,int pos){
      if(head == NULL){
         perror("This process was not created by this shell");
     }
-    if (p != NULL && p->pos == pos) {
+    while (p != NULL && p->pos != pos) {
         p = p->next; // Changed head
     }
     if(p != NULL){
