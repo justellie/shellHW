@@ -48,7 +48,7 @@ void shellLoop(void)
             arguments = splitLine(command_line);//obtengo los argumentos
             status = consolaEjecuta(arguments,&HEAD);
             free(*arguments);
-            free(arguments);    
+            free(arguments);
         }
         //if(HEAD != NULL) free(HEAD); 
         //free(HEAD);

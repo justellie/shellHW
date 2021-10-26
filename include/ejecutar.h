@@ -12,4 +12,4 @@ int consolaBackground(char **args,node *head);
 int consolaKill(char **args,node *head);
 int consolaJobs(char **args,node *head);
 int bg(char **args,node *head);
-void removeChar(char* s, char c);
+void removeChar(char* s, char c,int n);

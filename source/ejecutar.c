@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include "ejecutar.h"
+#include <ctype.h>
 
 char PWD[1024];		// Directorio de trabajo actual
 
@@ -133,6 +134,7 @@ int consolaEjecuta(char **args,node *head)
 {
   int i;
   int command=-1;
+  int acum=0;
 
   if (args[0] == NULL) {
     // No hay comandos
@@ -145,9 +147,10 @@ int consolaEjecuta(char **args,node *head)
     if(strchr(args[0], '/') != NULL){
       command=2; // if only have a direction then run the programn
       while(*aux!=NULL){
+        acum+=strlen(*aux);
         if(strchr(*aux, '&') != NULL){
             command=7; // if only have a direction then run the programn
-            removeChar(**args,'&');
+            removeChar(*args,'&',acum);
             break;
         }
         else{
@@ -274,14 +277,21 @@ int bg(char **args,node *head)
   return 1;
 }
 
-void removeChar(char* s, char c)
+void removeChar(char* s, char c,int n)
 {
  
-    int j, n = strlen(s);
-    for (int i = j = 0; i < n; i++){
-        if (s[i] != c){
+    int j=0;
+    int letter=0;
+    int i=0;
+
+    while(letter!=n  ){
+      if(s[i] != NULL && s[i]!=' '){
+        letter++;
+      }
+      if (s[i] != c){
             s[j++] = s[i];
-        }
+      }
+      i++;
     }
     s[j] = '\0';
 }
