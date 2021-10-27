@@ -1,4 +1,4 @@
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -6,47 +6,55 @@
 #include "ejecutar.h"
 #include <ctype.h>
 
-char PWD[1024];		// Directorio de trabajo actual
+char PWD[1024]; // Directorio de trabajo actual
 
-int lanzador(char **args,node *head)
+int lanzador(char **args, node *head)
 {
   pid_t pid, wpid;
   int status;
   args;
-  pid = fork();//Guardo el pid del proceso que voy a crear
+  pid = fork(); //Guardo el pid del proceso que voy a crear
   if (pid == 0) //proceso hijo
   {
-    //si hay un error lo lanzo      
-    if (execvp(args[0], args) == -1) {
+    //si hay un error lo lanzo
+    if (execvp(args[0], args) == -1)
+    {
       perror("Error de proceso");
     }
     exit(EXIT_FAILURE);
-  } 
+  }
   //esto es un error de forking
-  else if (pid < 0) 
+  else if (pid < 0)
   {
     perror("Error de forking");
-  } 
-  else 
+  }
+  else
   {
-    int size=getSize(head);
-    addNode(head, running,size+1,pid,args);
+    int size = getSize(head);
+    addNode(head, running, size + 1, pid, args);
     size++;
-    node aux=getNode(head, size);
+    node aux = getNode(head, size);
     /*
     * Proceso padre espera hasta que haya finalizado
     * O porque  una señal
     */
-    do 
+    do
     {
       wpid = waitpid(pid, &status, WUNTRACED);
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status) &&  aux->status != stopped);
-    if(aux->status != stopped){
-        size=getSize(head);
-        deletePos(head,size);
-        size--;
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status != stopped);
+    if (aux->status == running)
+    {
+      size = getSize(head);
+      deletePos(head, size);
+      size--;
     }
 
+    if (aux->status == dead)
+    {
+      size = getSize(head);
+      deletePos(head, size);
+      size--;
+    }
   }
   //retorna 1 para que pueda seguir en el loop de consola
   return 1;
@@ -56,28 +64,27 @@ int lanzador(char **args,node *head)
  */
 //Vecto de string con el nombre de comando interno de la shell
 char *comandosStr[] = {
-  "cd",
-  "exit",
-  "start",
-  "whereami",
-  "bg",
-  "kill",
-  "jobs",
-  "history"
-};
-//puntero a funciones 
-int (*comandosFunc[]) (char **,node *head) = {
-  &consolaMoveToDir,
-  &consolaByeBye,
-  &consolaStart,
-  &consolaLs,
-  &bg,
-  &consolaKill,
-  &consolaJobs,
-  &consolaBackground
+    "cd",
+    "exit",
+    "start",
+    "whereami",
+    "bg",
+    "kill",
+    "jobs",
+    "history"};
+//puntero a funciones
+int (*comandosFunc[])(char **, node *head) = {
+    &consolaMoveToDir,
+    &consolaByeBye,
+    &consolaStart,
+    &consolaLs,
+    &bg,
+    &consolaKill,
+    &consolaJobs,
+    &consolaBackground
 
 };
-int numeroComandos() 
+int numeroComandos()
 {
   return sizeof(comandosStr) / sizeof(char *);
 }
@@ -86,13 +93,13 @@ int numeroComandos()
 */
 int consolaMoveToDir(char **args)
 {
-  if (args[1] == NULL) 
+  if (args[1] == NULL)
   {
     fprintf(stderr, "Esperando direccion \n");
-  } 
-  else 
+  }
+  else
   {
-    if (chdir(args[1]) != 0) 
+    if (chdir(args[1]) != 0)
     {
       perror("Error directorio no existe!.");
     }
@@ -100,198 +107,212 @@ int consolaMoveToDir(char **args)
   return 1;
 }
 
-int consolaByeBye(char **args,node* head)
+int consolaByeBye(char **args, node *head)
 {
   pid_t wpid;
-  int status=1;
-  int size=getSize(head);
-  for (int i = 1; i < size+1; i++)
+  int status = 1;
+  int size = getSize(head);
+  for (int i = 1; i < size + 1; i++)
   {
-    node aux=getNode(head, i);
-    if (aux->status==stopped){
-        if( kill(aux->pid, SIGCONT)==0){
-        sleep(1);//espera que termine
-        kill(aux->pid, SIGHUP);//mata el proceso
-        wpid = waitpid(aux->pid, &status, WUNTRACED);//le dice al padre que esta muerto para evitar que sea zombie
+    node aux = getNode(head, i);
+    if (aux->status == stopped)
+    {
+      if (kill(aux->pid, SIGCONT) == 0)
+      {
+        sleep(1);                                     //espera que termine
+        kill(aux->pid, SIGHUP);                       //mata el proceso
+        wpid = waitpid(aux->pid, &status, WUNTRACED); //le dice al padre que esta muerto para evitar que sea zombie
       }
     }
-    else{
-       kill(aux->pid, SIGHUP);
+    else
+    {
+      kill(aux->pid, SIGHUP);
     }
-    deletePos(head,i);
-
-
+    deletePos(head, i);
   }
-  if(*head != NULL) free(*head); 
+  if (*head != NULL)
+    free(*head);
   return 0;
 }
-int consolaStart(char **args,node *head)
+int consolaStart(char **args, node *head)
 {
-  return lanzador(args,head);
+  return lanzador(args, head);
 }
 
-int consolaEjecuta(char **args,node *head)
+int consolaEjecuta(char **args, node *head)
 {
   int i;
-  int command=-1;
-  int acum=0;
+  int command = -1;
+  int acum = 0;
 
-  if (args[0] == NULL) {
+  if (args[0] == NULL)
+  {
     // No hay comandos
     return 1;
   }
 
-    // loop through the string to extract all other tokens
-    char **aux= args;
+  // loop through the string to extract all other tokens
+  char **aux = args;
 
-    if(strchr(args[0], '/') != NULL){
-      command=2; // if only have a direction then run the programn
-      while(*aux!=NULL){
-        acum+=strlen(*aux);
-        if(strchr(*aux, '&') != NULL){
-            command=7; // if only have a direction then run the programn
-            removeChar(*args,'&',acum);
-            break;
-        }
-        else{
-          aux++;
-        }
-        
+  if (strchr(args[0], '/') != NULL)
+  {
+    command = 2; // if only have a direction then run the programn
+    while (*aux != NULL)
+    {
+      acum += strlen(*aux);
+      if (strchr(*aux, '&') != NULL)
+      {
+        command = 7; // if only have a direction then run the programn
+        removeChar(*args, '&', acum);
+        break;
       }
-
-    }    
-    else{
-          for (i = 0; i < numeroComandos(); i++) {
-            if (strcmp(args[0], comandosStr[i]) == 0) {// else then find the right command
-              command=i;
-              args++;
-              break;
-            }
-          }
+      else
+      {
+        aux++;
+      }
     }
-  if(command != -1){
-    return (*comandosFunc[command])(args,head);//lanzo la funcion de los comandos internos
   }
-  else{
+  else
+  {
+    for (i = 0; i < numeroComandos(); i++)
+    {
+      if (strcmp(args[0], comandosStr[i]) == 0)
+      { // else then find the right command
+        command = i;
+        args++;
+        break;
+      }
+    }
+  }
+  if (command != -1)
+  {
+    return (*comandosFunc[command])(args, head); //lanzo la funcion de los comandos internos
+  }
+  else
+  {
 
     char s2[] = ": command not found \n";
 
-    
     // do things with s
     char *result = malloc(strlen(args[0]) + strlen(s2) + 1); // +1 for the null-terminator
 
     strcpy(result, args[0]);
     strcat(result, s2);
 
-
     printf(result);
     free(result);
     return command;
-
   }
 }
-int consolaLs(char ** args){
-  getcwd(PWD, sizeof(PWD));	// Iinicializar PWD
-	printf("%s\n", PWD);
-	return 1;
+int consolaLs(char **args)
+{
+  getcwd(PWD, sizeof(PWD)); // Iinicializar PWD
+  printf("%s\n", PWD);
+  return 1;
 }
 
-int consolaBackground(char **args,node *head)
+int consolaBackground(char **args, node *head)
 {
   pid_t pid;
-  pid = fork();//Guardo el pid del proceso que voy a crear
+  pid = fork(); //Guardo el pid del proceso que voy a crear
   if (pid == 0) //proceso hijo
   {
-    //si hay un error lo lanzo      
-    if (execvp(args[0], args) == -1) {
+    //si hay un error lo lanzo
+    if (execvp(args[0], args) == -1)
+    {
       perror("Error de proceso");
     }
     exit(EXIT_FAILURE);
-  } 
+  }
   //esto es un error de forking
-  else if (pid < 0) 
+  else if (pid < 0)
   {
     perror("Error de forking");
-  } 
-  else 
-  {
-      int size=getSize(head);
-      addNode(head, running,size+1,pid,args);
-      printf("%d\n",pid);
-
-  }
-  return 1;
-}
-int consolaKill(char **args,node *head)
-{
-  pid_t wpid;
-  int status=1;
-  int pos=atoi(*args);
-  node aux=getNode(head, pos);
-  if( kill(aux->pid, SIGTERM)==0)//try to term
-  {
-    sleep(5);//wait untill it finish
-    kill(aux->pid, SIGKILL);//kill the process
-    wpid = waitpid(aux->pid, &status, WUNTRACED);//notify to father process to avoid zombie process
-    deletePos(head,pos);
   }
   else
   {
-    printf("The process %d can't be terminated \n",aux->pid);
+    int size = getSize(head);
+    addNode(head, running, size + 1, pid, args);
+    printf("%d\n", pid);
+  }
+  return 1;
+}
+int consolaKill(char **args, node *head)
+{
+  pid_t wpid;
+  int status = 1;
+  int pos = atoi(*args);
+  node aux = getNode(head, pos);
+  if (kill(aux->pid, SIGTERM) == 0) //try to term
+  {
+    sleep(5);                                     //wait untill it finish
+    kill(aux->pid, SIGKILL);                      //kill the process
+    wpid = waitpid(aux->pid, &status, WUNTRACED); //notify to father process to avoid zombie process
+    deletePos(head, pos);
+  }
+  else
+  {
+    printf("The process %d can't be terminated \n", aux->pid);
   }
 
   return 1;
 }
-int consolaJobs(char **args,node *head){
-  int size=getSize(head);
-  for (int i = 1; i < size+1; i++)
+int consolaJobs(char **args, node *head)
+{
+  int size = getSize(head);
+  for (int i = 1; i < size + 1; i++)
   {
-    node aux=getNode(head, i);
-    if(aux->status == running){
+    node aux = getNode(head, i);
+    if (aux->status == running)
+    {
       char s2[] = ": Running\n";
-      printf("[%d] %d %s %s \n",aux->pos,aux->pid,s2,aux->hist);
+      printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
-    else{
+    else
+    {
       char s2[] = ": Stopped\n";
-       printf("[%d] %d %s %s \n",aux->pos,aux->pid,s2,aux->hist);
-      }
+      printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
-   
+  }
+
   return 1;
 }
-int bg(char **args,node *head)
+int bg(char **args, node *head)
 {
   pid_t wpid;
-  int status=1;
-  int pos=atoi(*args);
-  node aux=getNode(head, pos);
-  if( kill(aux->pid, SIGCONT)==0)//try to term
+  int status = 1;
+  int pos = atoi(*args);
+  node aux = getNode(head, pos);
+  if (kill(aux->pid, SIGCONT) == 0) //try to term
   {
-    aux->status=running;
+    aux->status = running;
   }
   else
   {
-    printf("The process %d can't continue \n",aux->pid);
+    printf("The process %d can't continue \n", aux->pid);
   }
 
   return 1;
 }
 
-void removeChar(char* s, char c,int n)
+void removeChar(char *s, char c, int n)
 {
- 
-    int j=0;
-    int letter=0;
-    int i=0;
 
-    while(letter!=n  ){
-      if(s[i] != NULL && s[i]!=' '){
-        letter++;
-      }
-      if (s[i] != c){
-            s[j++] = s[i];
-      }
-      i++;
+  int j = 0;
+  int letter = 0;
+  int i = 0;
+
+  while (letter != n)
+  {
+    if (s[i] != NULL && s[i] != ' ')
+    {
+      letter++;
     }
-    s[j] = '\0';
+    if (s[i] != c)
+    {
+      s[j++] = s[i];
+    }
+    i++;
+  }
+  s[j] = '\0';
 }

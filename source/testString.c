@@ -2,13 +2,8 @@
 #include <string.h>
 
 int main() {
-   char string[50] = "Hello! We are learning about strtok";
-   // Extract the first token
-   char * token = strtok(string, " ");
-   // loop through the string to extract all other tokens
-   while( token != NULL ) {
-      printf( " %s\n", token ); //printing each token
-      token = strtok(NULL, " ");
-   }
+      while(1){
+         int a= 1;
+      }
    return 0;
 }
