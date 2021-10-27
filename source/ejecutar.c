@@ -5,10 +5,12 @@
 #include <sys/wait.h>
 #include "ejecutar.h"
 #include <ctype.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 char PWD[1024]; // Directorio de trabajo actual
 
-int lanzador(char **args, node *head)
+int launcher(char **args, node *head)
 {
   pid_t pid, wpid;
   int status;
@@ -19,14 +21,14 @@ int lanzador(char **args, node *head)
     //si hay un error lo lanzo
     if (execvp(args[0], args) == -1)
     {
-      perror("Error de proceso");
+      perror("Error ");
     }
     exit(EXIT_FAILURE);
   }
   //esto es un error de forking
   else if (pid < 0)
   {
-    perror("Error de forking");
+    perror("Error ");
   }
   else
   {
@@ -34,10 +36,7 @@ int lanzador(char **args, node *head)
     addNode(head, running, size + 1, pid, args);
     size++;
     node aux = getNode(head, size);
-    /*
-    * Proceso padre espera hasta que haya finalizado
-    * O porque  una señal
-    */
+
     do
     {
       wpid = waitpid(pid, &status, WUNTRACED);
@@ -56,14 +55,10 @@ int lanzador(char **args, node *head)
       size--;
     }
   }
-  //retorna 1 para que pueda seguir en el loop de consola
   return 1;
 }
-/*
- * Lista de comandos
- */
-//Vecto de string con el nombre de comando interno de la shell
-char *comandosStr[] = {
+
+char *commandStr[] = {
     "cd",
     "exit",
     "start",
@@ -73,41 +68,51 @@ char *comandosStr[] = {
     "jobs",
     "history"};
 //puntero a funciones
-int (*comandosFunc[])(char **, node *head) = {
+int (*commandsFunc[])(char **, node *head) = {
     &consolaMoveToDir,
-    &consolaByeBye,
-    &consolaStart,
-    &consolaLs,
+    &shellExit,
+    &shellStart,
+    &setPath,
     &bg,
-    &consolaKill,
-    &consolaJobs,
-    &consolaBackground
+    &shellKill,
+    &shellJobs,
+    &shellBackground
 
 };
-int numeroComandos()
+int sizeCommands()
 {
-  return sizeof(comandosStr) / sizeof(char *);
+  return sizeof(commandStr) / sizeof(char *);
 }
 /*
   Funciones de los comandos.
 */
 int consolaMoveToDir(char **args)
 {
-  if (args[1] == NULL)
+  const char *homedir;
+  struct passwd *pw = getpwuid(getuid());
+
+  if ((homedir = getenv("HOME")) == NULL)
   {
-    fprintf(stderr, "Esperando direccion \n");
+    homedir = getpwuid(getuid())->pw_dir;
+  }
+  if (args[0] == NULL)
+  {
+    if (chdir(homedir) != 0)
+    {
+      perror(homedir);
+    }
   }
   else
   {
-    if (chdir(args[1]) != 0)
+    if (chdir(args[0]) != 0)
     {
-      perror("Error directorio no existe!.");
+      perror(args[0]);
     }
   }
   return 1;
 }
 
-int consolaByeBye(char **args, node *head)
+int shellExit(char **args, node *head)
 {
   pid_t wpid;
   int status = 1;
@@ -134,9 +139,9 @@ int consolaByeBye(char **args, node *head)
     free(*head);
   return 0;
 }
-int consolaStart(char **args, node *head)
+int shellStart(char **args, node *head)
 {
-  return lanzador(args, head);
+  return launcher(args, head);
 }
 
 int consolaEjecuta(char **args, node *head)
@@ -174,9 +179,9 @@ int consolaEjecuta(char **args, node *head)
   }
   else
   {
-    for (i = 0; i < numeroComandos(); i++)
+    for (i = 0; i < sizeCommands(); i++)
     {
-      if (strcmp(args[0], comandosStr[i]) == 0)
+      if (strcmp(args[0], commandStr[i]) == 0)
       { // else then find the right command
         command = i;
         args++;
@@ -186,7 +191,7 @@ int consolaEjecuta(char **args, node *head)
   }
   if (command != -1)
   {
-    return (*comandosFunc[command])(args, head); //lanzo la funcion de los comandos internos
+    return (*commandsFunc[command])(args, head);
   }
   else
   {
@@ -204,14 +209,14 @@ int consolaEjecuta(char **args, node *head)
     return command;
   }
 }
-int consolaLs(char **args)
+void setPath(char **args)
 {
-  getcwd(PWD, sizeof(PWD)); // Iinicializar PWD
+  getcwd(PWD, sizeof(PWD));
   printf("%s\n", PWD);
   return 1;
 }
 
-int consolaBackground(char **args, node *head)
+int shellBackground(char **args, node *head)
 {
   pid_t pid;
   pid = fork(); //Guardo el pid del proceso que voy a crear
@@ -237,7 +242,7 @@ int consolaBackground(char **args, node *head)
   }
   return 1;
 }
-int consolaKill(char **args, node *head)
+int shellKill(char **args, node *head)
 {
   pid_t wpid;
   int status = 1;
@@ -257,7 +262,7 @@ int consolaKill(char **args, node *head)
 
   return 1;
 }
-int consolaJobs(char **args, node *head)
+int shellJobs(char **args, node *head)
 {
   int size = getSize(head);
   for (int i = 1; i < size + 1; i++)

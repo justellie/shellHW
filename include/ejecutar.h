@@ -1,15 +1,15 @@
 
 
 #include "list.h"
-int lanzador(char **args, node *head);
+int launcher(char **args, node *head);
 int consolaMoveToDir(char **args);
-int consolaByeBye(char **args, node *head);
-int numeroComandos();
+int shellExit(char **args, node *head);
+int sizeCommands();
 int consolaEjecuta(char **args, node *head);
-int consolaStart(char **args, node *head);
-int consolaLs(char **args);
-int consolaBackground(char **args, node *head);
-int consolaKill(char **args, node *head);
-int consolaJobs(char **args, node *head);
+int shellStart(char **args, node *head);
+void setPath(char **args);
+int shellBackground(char **args, node *head);
+int shellKill(char **args, node *head);
+int shellJobs(char **args, node *head);
 int bg(char **args, node *head);
 void removeChar(char *s, char c, int n);

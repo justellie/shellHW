@@ -24,7 +24,8 @@ void sigint_handler(int sig)
                 sleep(1);
                 pid_t pid = aux->pid;
                 aux->status = dead;
-                printf("\n [%d] %d %s  by %d \n", size, pid, "terminated", SIGINT);
+                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, WTERMSIG(status));
+
                 kill(aux->pid, SIGINT);
         }
 }
@@ -43,7 +44,6 @@ void verify_childrens()
         {
                 int size = getSize(&HEAD);
                 node aux = getNode(&HEAD, size);
-                waitpid(-1, &status, WNOHANG);
                 for (int i = 1; i < size + 1; i++)
                 {
                         node aux = getNode(&HEAD, size);
@@ -53,10 +53,12 @@ void verify_childrens()
                                 if (WIFEXITED(status))
                                 {
                                         printf("Child exited with RC=%d\n", WEXITSTATUS(status));
+                                        
                                 }
                                 if (WIFSIGNALED(status))
                                 {
-                                        printf("Child exited via signal %d\n", WTERMSIG(status));
+                                        printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, WTERMSIG(status));
+                                        deletePos(&HEAD, size);
                                 }
                         }
                 }
@@ -69,7 +71,7 @@ void shellLoop(void)
         int status;
         char *command_line;
         char *s;
-        char **arguments; //puntero de argumentos
+        char **arguments; //pointer to args
 
         status = 1;
 
@@ -81,30 +83,29 @@ void shellLoop(void)
                 signal(SIGCHLD, sigtstp_handler);
                 verify_childrens();
                 printf("> ");
-                command_line = readCommandLine();                                    //lee la linea de comando
-                if (strcmp(command_line, "") == 0 || strcmp(command_line, " ") == 0) //si es vacia continua
+                command_line = readCommandLine();                                    
+                if (strcmp(command_line, "") == 0 || strcmp(command_line, " ") == 0)
                 {
                         free(command_line);
                         continue;
                 }
                 verify_childrens();
-                arguments = splitLine(command_line); //obtengo los argumentos
+                arguments = splitLine(command_line); //get the arguments
                 status = consolaEjecuta(arguments, &HEAD);
                 free(*arguments);
                 free(arguments);
         }
-        //if(HEAD != NULL) free(HEAD);
-        //free(HEAD);
+
 }
 
 char *readCommandLine(void)
 {
         int position = 0;
         int buf_size = 1024;
-        char *buffer = (char *)malloc(sizeof(char) * buf_size); //esto es basicamente un vector char
+        char *buffer = (char *)malloc(sizeof(char) * buf_size); 
         char c;
 
-        // Leo caracter por caracter
+        // read char by char 
         c = getchar();
         int count = 0;
         while (c != EOF && c != '\n')
@@ -119,12 +120,12 @@ char *readCommandLine(void)
                         position++;
                 }
 
-                // expando el buffer si es necesario
+                
 
                 if (position >= buf_size)
                 {
                         buf_size += 64;
-                        buffer = realloc(buffer, buf_size); //guardo y expando el buffer
+                        buffer = realloc(buffer, buf_size); //save and expand my buffer
                 }
 
                 c = getchar();
@@ -136,17 +137,17 @@ char *readCommandLine(void)
 char **splitLine(char *command)
 {
         int position = 0;
-        int no_of_tokens = 64; //numero de palabras en el comando recibido
+        int no_of_tokens = 64;
         char **tokens = malloc(sizeof(char *) * no_of_tokens);
         char delim[2] = " ";
 
-        // Divido el comando en tokens con el espacio como delimitador
-        char *token = strtok(command, delim); //Obtengo todas las palabras delimitadas por " "
+        // splitcommand
+        char *token = strtok(command, delim); 
         while (token != NULL)
         {
-                tokens[position] = token; // si no es null la añado a mi vector de char
+                tokens[position] = token; // if not null to my array
                 position++;
-                token = strtok(NULL, delim); //avanzo con los token
+                token = strtok(NULL, delim); 
         }
         tokens[position] = NULL;
         return tokens;
