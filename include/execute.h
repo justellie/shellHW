@@ -5,7 +5,7 @@ int launcher(char **args, node *head);
 int cd(char **args);
 int shellExit(char **args, node *head);
 int sizeCommands();
-int consolaEjecuta(char **args, node *head);
+int executeShell(char **args, node *head);
 int shellStart(char **args, node *head);
 int shellBackground(char **args, node *head);
 int shellKill(char **args, node *head);

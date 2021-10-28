@@ -5,10 +5,10 @@ CFLAGS=-g -W -fsanitize=address -I$(IDIR)
 ODIR=obj
 #LDIR =../lib
 
-_DEPS = list.h ejecutar.h lectura.h 
+_DEPS = list.h execute.h read.h 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = shell.o list.o ejecutar.o lectura.o 
+_OBJ = shell.o list.o execute.o read.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

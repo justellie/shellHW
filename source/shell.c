@@ -1,9 +1,8 @@
 #include <stdio.h>	
-#include "lectura.h"
+#include "read.h"
 
 int main(int argc, char const *argv[])
 {
-    //algoritmo principal
     shellLoop();
     return 0;
 }

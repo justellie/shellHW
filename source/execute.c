@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/wait.h>
-#include "ejecutar.h"
+#include "execute.h"
 #include <ctype.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -139,7 +139,7 @@ int shellStart(char **args, node *head)
   return launcher(args, head);
 }
 
-int consolaEjecuta(char **args, node *head)
+int executeShell(char **args, node *head)
 {
   int i;
   int command = -1;
@@ -258,6 +258,7 @@ int shellKill(char **args, node *head)
     sleep(5);                                     //wait untill it finish
     kill(aux->pid, SIGKILL);                      //kill the process
     wpid = waitpid(aux->pid, &status, WUNTRACED); //notify to father process to avoid zombie process
+    printf("[%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGTERM);
     deletePos(head, pos);
   }
   else
@@ -275,12 +276,12 @@ int shellJobs(char **args, node *head)
     node aux = getNode(head, i);
     if (aux->status != stopped)
     {
-      char s2[] = " Running\n";
+      char s2[] = "Running";
       printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
     else
     {
-      char s2[] = " Stopped\n";
+      char s2[] = "Stopped";
       printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
   }

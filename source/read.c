@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lectura.h"
+#include "read.h"
 #include <signal.h>
 node HEAD = NULL; //list of jobs
 void sigtstp_handler(int sig)
@@ -24,7 +24,7 @@ void sigint_handler(int sig)
                 sleep(1);
                 pid_t pid = aux->pid;
                 aux->status = dead;
-                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, WTERMSIG(status));
+                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGINT);
 
                 kill(aux->pid, SIGINT);
         }
@@ -84,7 +84,7 @@ void shellLoop(void)
                         continue;
                 }
                 arguments = splitLine(command_line); //get the arguments
-                status = consolaEjecuta(arguments, &HEAD);
+                status = executeShell(arguments, &HEAD);
                 free(*arguments);
                 free(arguments);
         }
