@@ -9,7 +9,8 @@ enum status
 {
    running,
    stopped,
-   dead
+   dead,
+   background
 } status;
 
 typedef struct JID // JOB I D

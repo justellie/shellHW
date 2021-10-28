@@ -8,24 +8,24 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-char PWD[1024]; // Directorio de trabajo actual
+char PWD[1024];
 
 int launcher(char **args, node *head)
 {
   pid_t pid, wpid;
   int status;
   args;
-  pid = fork(); //Guardo el pid del proceso que voy a crear
-  if (pid == 0) //proceso hijo
+  pid = fork();
+  if (pid == 0)
   {
-    //si hay un error lo lanzo
+
     if (execvp(args[0], args) == -1)
     {
       perror("Error ");
     }
     exit(EXIT_FAILURE);
   }
-  //esto es un error de forking
+
   else if (pid < 0)
   {
     perror("Error ");
@@ -40,15 +40,14 @@ int launcher(char **args, node *head)
     do
     {
       wpid = waitpid(pid, &status, WUNTRACED);
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status != stopped);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
     if (aux->status == running)
     {
       size = getSize(head);
       deletePos(head, size);
       size--;
     }
-
-    if (aux->status == dead)
+    else if (aux->status == dead)
     {
       size = getSize(head);
       deletePos(head, size);
@@ -62,31 +61,29 @@ char *commandStr[] = {
     "cd",
     "exit",
     "start",
-    "whereami",
     "bg",
     "kill",
     "jobs",
-    "history"};
-//puntero a funciones
+    "background",
+    "fg"};
+
 int (*commandsFunc[])(char **, node *head) = {
-    &consolaMoveToDir,
+    &cd,
     &shellExit,
     &shellStart,
-    &setPath,
     &bg,
     &shellKill,
     &shellJobs,
-    &shellBackground
+    &shellBackground,
+    &fg
 
 };
 int sizeCommands()
 {
   return sizeof(commandStr) / sizeof(char *);
 }
-/*
-  Funciones de los comandos.
-*/
-int consolaMoveToDir(char **args)
+
+int cd(char **args)
 {
   const char *homedir;
   struct passwd *pw = getpwuid(getuid());
@@ -124,9 +121,7 @@ int shellExit(char **args, node *head)
     {
       if (kill(aux->pid, SIGCONT) == 0)
       {
-        sleep(1);                                     //espera que termine
-        kill(aux->pid, SIGHUP);                       //mata el proceso
-        wpid = waitpid(aux->pid, &status, WUNTRACED); //le dice al padre que esta muerto para evitar que sea zombie
+        kill(aux->pid, SIGHUP);
       }
     }
     else
@@ -167,7 +162,7 @@ int consolaEjecuta(char **args, node *head)
       acum += strlen(*aux);
       if (strchr(*aux, '&') != NULL)
       {
-        command = 7; // if only have a direction then run the programn
+        command = 6; // if only have a direction then run the programn
         removeChar(*args, '&', acum);
         break;
       }
@@ -179,11 +174,27 @@ int consolaEjecuta(char **args, node *head)
   }
   else
   {
+
     for (i = 0; i < sizeCommands(); i++)
     {
       if (strcmp(args[0], commandStr[i]) == 0)
       { // else then find the right command
         command = i;
+
+        while (*aux != NULL)
+        {
+          acum += strlen(*aux);
+          if (strchr(*aux, '%') != NULL)
+          {
+            removeChar(*args, '%', acum);
+            break;
+          }
+          else
+          {
+            aux++;
+          }
+        }
+
         args++;
         break;
       }
@@ -209,36 +220,30 @@ int consolaEjecuta(char **args, node *head)
     return command;
   }
 }
-void setPath(char **args)
-{
-  getcwd(PWD, sizeof(PWD));
-  printf("%s\n", PWD);
-  return 1;
-}
 
 int shellBackground(char **args, node *head)
 {
   pid_t pid;
-  pid = fork(); //Guardo el pid del proceso que voy a crear
-  if (pid == 0) //proceso hijo
+  pid = fork();
+  if (pid == 0)
   {
-    //si hay un error lo lanzo
+
     if (execvp(args[0], args) == -1)
     {
-      perror("Error de proceso");
+      perror("Error");
     }
     exit(EXIT_FAILURE);
   }
-  //esto es un error de forking
+
   else if (pid < 0)
   {
-    perror("Error de forking");
+    perror("Error");
   }
   else
   {
     int size = getSize(head);
-    addNode(head, running, size + 1, pid, args);
-    printf("%d\n", pid);
+    addNode(head, background, size + 1, pid, args);
+    printf("[%d] %d\n", size + 1, pid);
   }
   return 1;
 }
@@ -268,14 +273,14 @@ int shellJobs(char **args, node *head)
   for (int i = 1; i < size + 1; i++)
   {
     node aux = getNode(head, i);
-    if (aux->status == running)
+    if (aux->status != stopped)
     {
-      char s2[] = ": Running\n";
+      char s2[] = " Running\n";
       printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
     else
     {
-      char s2[] = ": Stopped\n";
+      char s2[] = " Stopped\n";
       printf("[%d] %d %s %s \n", aux->pos, aux->pid, s2, aux->hist);
     }
   }
@@ -290,7 +295,42 @@ int bg(char **args, node *head)
   node aux = getNode(head, pos);
   if (kill(aux->pid, SIGCONT) == 0) //try to term
   {
+    aux->status = background;
+  }
+  else
+  {
+    printf("The process %d can't continue \n", aux->pid);
+  }
+
+  return 1;
+}
+
+int fg(char **args, node *head)
+{
+  pid_t wpid;
+  int status = 1;
+  int pos = atoi(*args);
+  node aux = getNode(head, pos);
+  int size;
+  if (kill(aux->pid, SIGCONT) == 0) //try to term
+  {
     aux->status = running;
+    do
+    {
+      wpid = waitpid(aux->pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
+    if (aux->status == running)
+    {
+      size = getSize(head);
+      deletePos(head, size);
+      size--;
+    }
+    else if (aux->status == dead)
+    {
+      size = getSize(head);
+      deletePos(head, size);
+      size--;
+    }
   }
   else
   {

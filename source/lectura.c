@@ -30,12 +30,6 @@ void sigint_handler(int sig)
         }
 }
 //SIGCHLD
-void sigchld_handler(int sig)
-{
-        char msg[] = "caught sigchld\n";
-        write(1, msg, sizeof(msg));
-}
-
 void verify_childrens()
 {
         int status;
@@ -52,7 +46,8 @@ void verify_childrens()
                         {
                                 if (WIFEXITED(status))
                                 {
-                                        printf("Child exited with RC=%d\n", WEXITSTATUS(status));
+                                        deletePos(&HEAD, size);
+
                                         
                                 }
                                 if (WIFSIGNALED(status))
@@ -80,7 +75,6 @@ void shellLoop(void)
 
                 signal(SIGINT, sigint_handler);
                 signal(SIGTSTP, sigtstp_handler);
-                signal(SIGCHLD, sigtstp_handler);
                 verify_childrens();
                 printf("> ");
                 command_line = readCommandLine();                                    
@@ -89,7 +83,6 @@ void shellLoop(void)
                         free(command_line);
                         continue;
                 }
-                verify_childrens();
                 arguments = splitLine(command_line); //get the arguments
                 status = consolaEjecuta(arguments, &HEAD);
                 free(*arguments);
