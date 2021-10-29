@@ -24,7 +24,7 @@ void sigint_handler(int sig)
                 sleep(1);
                 pid_t pid = aux->pid;
                 aux->status = dead;
-                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGINT);
+                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGTERM);
 
                 kill(aux->pid, SIGINT);
         }
