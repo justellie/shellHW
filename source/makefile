@@ -1,6 +1,6 @@
-IDIR =../include
+IDIR =./include
 CC= gcc 
-CFLAGS=-g -W -fsanitize=address -I$(IDIR) 
+CFLAGS=-g -Wall -Wvla -fsanitize=address -I$(IDIR) 
 
 ODIR=obj
 #LDIR =../lib

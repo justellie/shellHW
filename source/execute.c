@@ -14,7 +14,6 @@ int launcher(char **args, node *head)
 {
   pid_t pid, wpid;
   int status;
-  args;
   pid = fork();
   if (pid == 0)
   {
@@ -111,8 +110,6 @@ int cd(char **args)
 
 int shellExit(char **args, node *head)
 {
-  pid_t wpid;
-  int status = 1;
   int size = getSize(head);
   for (int i = 1; i < size + 1; i++)
   {
@@ -290,8 +287,6 @@ int shellJobs(char **args, node *head)
 }
 int bg(char **args, node *head)
 {
-  pid_t wpid;
-  int status = 1;
   int pos = atoi(*args);
   node aux = getNode(head, pos);
   if (kill(aux->pid, SIGCONT) == 0) //try to term
