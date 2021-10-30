@@ -111,9 +111,9 @@ int cd(char **args)
 int shellExit(char **args, node *head)
 {
   int size = getSize(head);
-  for (int i = 1; i < size + 1; i++)
+  while(size!=0)
   {
-    node aux = getNode(head, i);
+    node aux = getNum(head, 1);
     if (aux->status == stopped)
     {
       if (kill(aux->pid, SIGCONT) == 0)
@@ -125,7 +125,8 @@ int shellExit(char **args, node *head)
     {
       kill(aux->pid, SIGHUP);
     }
-    deletePos(head, i);
+    deletePos(head, aux->pos);
+    size = getSize(head);
   }
   if (*head != NULL)
     free(*head);
@@ -160,7 +161,10 @@ int executeShell(char **args, node *head)
       if (strchr(*aux, '&') != NULL)
       {
         command = 6; // if only have a direction then run the programn
-        removeChar(*args, '&', acum);
+        int band=removeChar(*args, '&', acum);
+        if(band==1){
+          *aux=NULL;
+        }
         break;
       }
       else
@@ -249,14 +253,13 @@ int shellKill(char **args, node *head)
   pid_t wpid;
   int status = 1;
   int pos = atoi(*args);
-  node aux = getNode(head, pos);
+  node aux = getNum(head, pos);
   if (kill(aux->pid, SIGTERM) == 0) //try to term
   {
     sleep(5);                                     //wait untill it finish
-    kill(aux->pid, SIGKILL);                      //kill the process
     wpid = waitpid(aux->pid, &status, WUNTRACED); //notify to father process to avoid zombie process
     printf("[%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGTERM);
-    deletePos(head, pos);
+    deletePos(head, aux->pos);
   }
   else
   {
@@ -270,7 +273,7 @@ int shellJobs(char **args, node *head)
   int size = getSize(head);
   for (int i = 1; i < size + 1; i++)
   {
-    node aux = getNode(head, i);
+    node aux = getNum(head, i);
     if (aux->status != stopped)
     {
       char s2[] = "Running";
@@ -336,12 +339,13 @@ int fg(char **args, node *head)
   return 1;
 }
 
-void removeChar(char *s, char c, int n)
+int removeChar(char *s, char c, int n)
 {
 
   int j = 0;
   int letter = 0;
   int i = 0;
+  int band=0;
 
   while (letter != n)
   {
@@ -355,5 +359,12 @@ void removeChar(char *s, char c, int n)
     }
     i++;
   }
-  s[j] = '\0';
+  if(s[j-1] != '\000')
+  {
+    s[j] = '\0';
+    band=0;
+  }else{
+    band=1;
+  }
+  return band;
 }

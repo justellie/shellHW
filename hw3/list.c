@@ -139,3 +139,24 @@ char *stringcopywithpointer(const char *source)
     strcpy(copy, source);
     return copy;
 }
+
+node getNum(node *head, int pos)
+{
+    node p = *head;
+    node anwser = NULL;
+    int count =1;
+    if (head == NULL)
+    {
+        perror("This process was not created by this shell");
+    }
+    while (p != NULL && count != pos)
+    {
+        p = p->next; // Changed head
+        count++;
+    }
+    if (p != NULL)
+    {
+        anwser = p;
+    }
+    return anwser;
+}

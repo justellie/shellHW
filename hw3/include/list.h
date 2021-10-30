@@ -28,3 +28,4 @@ void deletePos(node *head, int pos);
 node getNode(node *head, int pos);
 int getSize(node *head);
 char *stringcopywithpointer(const char *source);
+node getNum(node *head, int pos);

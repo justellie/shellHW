@@ -12,4 +12,4 @@ int shellKill(char **args, node *head);
 int shellJobs(char **args, node *head);
 int bg(char **args, node *head);
 int fg(char **args, node *head);
-void removeChar(char *s, char c, int n);
+int removeChar(char *s, char c, int n);

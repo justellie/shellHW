@@ -9,7 +9,7 @@ void sigtstp_handler(int sig)
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
-                node aux = getNode(&HEAD, size);
+                node aux = getNum(&HEAD, size);
                 aux->status = stopped;
                 kill(aux->pid, SIGTSTP);
         }
@@ -20,13 +20,13 @@ void sigint_handler(int sig)
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
-                node aux = getNode(&HEAD, size);
+                node aux = getNum(&HEAD, size);
                 sleep(1);
                 pid_t pid = aux->pid;
                 aux->status = dead;
-                printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGINT);
-
+                printf("[%d] %d terminated by signal %d",aux->pos, aux->pid, SIGINT);
                 kill(aux->pid, SIGTERM);
+                deletePos(&HEAD, aux->pos);
         }
 }
 //SIGCHLD
@@ -37,10 +37,9 @@ void verify_childrens()
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
-                node aux = getNode(&HEAD, size);
                 for (int i = 1; i < size + 1; i++)
                 {
-                        node aux = getNode(&HEAD, size);
+                        node aux = getNum(&HEAD, i);
                         rc_pid = waitpid(aux->pid, &status, WNOHANG);
                         if (rc_pid > 0)
                         {
@@ -53,7 +52,7 @@ void verify_childrens()
                                 if (WIFSIGNALED(status))
                                 {
                                         printf("\n [%d] %d terminated by signal %d\n",aux->pos, aux->pid, WTERMSIG(status));
-                                        deletePos(&HEAD, size);
+                                        deletePos(&HEAD, aux->pos);
                                 }
                         }
                 }
