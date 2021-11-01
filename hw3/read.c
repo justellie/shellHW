@@ -9,7 +9,16 @@ void sigtstp_handler(int sig)
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
-                node aux = getNum(&HEAD, size);
+                 node aux = NULL;
+                while (size!=0){
+                aux = getNum(&HEAD, size);
+                        if(aux->status==running){
+                                break;
+                        }else{
+                                size--;
+                        }
+                }
+                
                 aux->status = stopped;
                 kill(aux->pid, SIGTSTP);
         }
@@ -20,13 +29,32 @@ void sigint_handler(int sig)
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
-                node aux = getNum(&HEAD, size);
-                sleep(1);
-                pid_t pid = aux->pid;
-                aux->status = dead;
-                printf("[%d] %d terminated by signal %d",aux->pos, aux->pid, SIGINT);
-                kill(aux->pid, SIGTERM);
-                deletePos(&HEAD, aux->pos);
+                node aux = NULL;
+
+                while (size != 0)
+                {
+                        aux = getNum(&HEAD, size);
+                        if (aux->status == running)
+                        {
+                                break;
+                        }
+                        else
+                        {
+                                size--;
+                        }
+                }
+                if (size>0)
+                {
+                        kill(aux->pid, SIGTERM);
+                        if (aux->status == running)
+                        {
+                                aux->status = dead;
+                        }
+                        else
+                        {
+                                deletePos(&HEAD, aux->pos);
+                        }
+                }
         }
 }
 //SIGCHLD

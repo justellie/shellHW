@@ -31,7 +31,7 @@ void addNode(node *head, int status, int pos, pid_t pid, char **args)
         acum += strlen(*aux);
         aux++;
     }
-    temp->hist = (char *)malloc(sizeof(char) * (acum + 1 + count - 1));
+    temp->hist = (char *)malloc(sizeof(char) * (acum + 1 + count - 1+3));
     aux = args;
     char space[] = " ";
     if (*args != NULL)
@@ -145,11 +145,11 @@ node getNum(node *head, int pos)
     node p = *head;
     node anwser = NULL;
     int count =1;
-    if (head == NULL)
+    if (*head == NULL)
     {
-        perror("This process was not created by this shell");
+        anwser = NULL;
     }
-    while (p != NULL && count != pos)
+    while (p != NULL && pos!=0 && count != pos)
     {
         p = p->next; // Changed head
         count++;
@@ -158,5 +158,6 @@ node getNum(node *head, int pos)
     {
         anwser = p;
     }
+
     return anwser;
 }

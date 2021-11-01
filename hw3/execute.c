@@ -32,9 +32,19 @@ int launcher(char **args, node *head)
   else
   {
     int size = getSize(head);
-    addNode(head, running, size + 1, pid, args);
+    node aux = getNum(head, size);
+    if (size > 0)
+    {
+
+      addNode(head, running, aux->pos + 1, pid, args);
+    }
+    else
+    {
+      addNode(head, running, 1, pid, args);
+    }
+
     size++;
-    node aux = getNode(head, size);
+    aux = getNode(head, size);
 
     do
     {
@@ -43,13 +53,13 @@ int launcher(char **args, node *head)
     if (aux->status == running)
     {
       size = getSize(head);
-      deletePos(head, size);
+      deletePos(head, aux->pos);
       size--;
     }
     else if (aux->status == dead)
     {
       size = getSize(head);
-      deletePos(head, size);
+      deletePos(head, aux->pos);
       size--;
     }
   }
@@ -111,7 +121,7 @@ int cd(char **args)
 int shellExit(char **args, node *head)
 {
   int size = getSize(head);
-  while(size!=0)
+  while (size != 0)
   {
     node aux = getNum(head, 1);
     if (aux->status == stopped)
@@ -145,7 +155,6 @@ int executeShell(char **args, node *head)
 
   if (args[0] == NULL)
   {
-    // No hay comandos
     return 1;
   }
 
@@ -161,9 +170,10 @@ int executeShell(char **args, node *head)
       if (strchr(*aux, '&') != NULL)
       {
         command = 6; // if only have a direction then run the programn
-        int band=removeChar(*args, '&', acum);
-        if(band==1){
-          *aux=NULL;
+        int band = removeChar(*args, '&', acum);
+        if (band == 1)
+        {
+          *aux = NULL;
         }
         break;
       }
@@ -243,8 +253,19 @@ int shellBackground(char **args, node *head)
   else
   {
     int size = getSize(head);
-    addNode(head, background, size + 1, pid, args);
+    node aux = getNum(head, size);
+    if (size > 0)
+    {
+
+      addNode(head, background, aux->pos + 1, pid, args);
+    }
+    else
+    {
+      addNode(head, background, 1, pid, args);
+    }
     printf("[%d] %d\n", size + 1, pid);
+    aux = getNum(head, size + 1);
+    strcat(aux->hist, " &");
   }
   return 1;
 }
@@ -253,12 +274,15 @@ int shellKill(char **args, node *head)
   pid_t wpid;
   int status = 1;
   int pos = atoi(*args);
-  node aux = getNum(head, pos);
+  node aux = getNode(head, pos);
+  if (aux->status == stopped)
+  {
+    kill(aux->pid, SIGCONT);
+  }
+
   if (kill(aux->pid, SIGTERM) == 0) //try to term
   {
-    sleep(5);                                     //wait untill it finish
-    wpid = waitpid(aux->pid, &status, WUNTRACED); //notify to father process to avoid zombie process
-    printf("[%d] %d terminated by signal %d\n",aux->pos, aux->pid, SIGTERM);
+    printf("[%d] %d terminated by signal %d\n", aux->pos, aux->pid, SIGTERM);
     deletePos(head, aux->pos);
   }
   else
@@ -295,6 +319,10 @@ int bg(char **args, node *head)
   if (kill(aux->pid, SIGCONT) == 0) //try to term
   {
     aux->status = background;
+    if (strchr(aux->hist, '&') == NULL)
+    {
+      strcat(aux->hist, " &");
+    }
   }
   else
   {
@@ -311,7 +339,34 @@ int fg(char **args, node *head)
   int pos = atoi(*args);
   node aux = getNode(head, pos);
   int size;
-  if (kill(aux->pid, SIGCONT) == 0) //try to term
+  if (aux->status == stopped)
+  {
+    if (kill(aux->pid, SIGCONT) == 0) //try to term
+    {
+      aux->status = running;
+      do
+      {
+        wpid = waitpid(aux->pid, &status, WUNTRACED);
+      } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
+      if (aux->status == running)
+      {
+        size = getSize(head);
+        deletePos(head, aux->pos);
+        size--;
+      }
+      else if (aux->status == dead)
+      {
+        size = getSize(head);
+        deletePos(head, aux->pos);
+        size--;
+      }
+    }
+    else
+    {
+      printf("The process %d can't continue \n", aux->pid);
+    }
+  }
+  else if (aux->status == background)
   {
     aux->status = running;
     do
@@ -321,19 +376,15 @@ int fg(char **args, node *head)
     if (aux->status == running)
     {
       size = getSize(head);
-      deletePos(head, size);
+      deletePos(head, aux->pos);
       size--;
     }
     else if (aux->status == dead)
     {
       size = getSize(head);
-      deletePos(head, size);
+      deletePos(head, aux->pos);
       size--;
     }
-  }
-  else
-  {
-    printf("The process %d can't continue \n", aux->pid);
   }
 
   return 1;
@@ -345,7 +396,7 @@ int removeChar(char *s, char c, int n)
   int j = 0;
   int letter = 0;
   int i = 0;
-  int band=0;
+  int band = 0;
 
   while (letter != n)
   {
@@ -359,12 +410,14 @@ int removeChar(char *s, char c, int n)
     }
     i++;
   }
-  if(s[j-1] != '\000')
+  if (s[j - 1] != '\000')
   {
     s[j] = '\0';
-    band=0;
-  }else{
-    band=1;
+    band = 0;
+  }
+  else
+  {
+    band = 1;
   }
   return band;
 }
