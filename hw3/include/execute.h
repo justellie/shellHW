@@ -2,7 +2,7 @@
 
 #include "list.h"
 int launcher(char **args, node *head);
-int cd(char **args);
+int cd(char **args, node *head);
 int shellExit(char **args, node *head);
 int sizeCommands();
 int executeShell(char **args, node *head);

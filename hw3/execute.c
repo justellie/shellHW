@@ -12,7 +12,7 @@ char PWD[1024];
 
 int launcher(char **args, node *head)
 {
-  pid_t pid, wpid;
+  pid_t pid;
   int status;
   pid = fork();
   if (pid == 0)
@@ -48,7 +48,7 @@ int launcher(char **args, node *head)
 
     do
     {
-      wpid = waitpid(pid, &status, WUNTRACED);
+      waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
     if (aux->status == running)
     {
@@ -92,10 +92,9 @@ int sizeCommands()
   return sizeof(commandStr) / sizeof(char *);
 }
 
-int cd(char **args)
+int cd(char **args, node *head)
 {
   const char *homedir;
-  struct passwd *pw = getpwuid(getuid());
 
   if ((homedir = getenv("HOME")) == NULL)
   {
@@ -226,7 +225,7 @@ int executeShell(char **args, node *head)
     strcpy(result, args[0]);
     strcat(result, s2);
 
-    printf(result);
+    printf("%s",result);
     free(result);
     return command;
   }
@@ -271,8 +270,6 @@ int shellBackground(char **args, node *head)
 }
 int shellKill(char **args, node *head)
 {
-  pid_t wpid;
-  int status = 1;
   int pos = atoi(*args);
   node aux = getNode(head, pos);
   if (aux->status == stopped)
@@ -334,7 +331,6 @@ int bg(char **args, node *head)
 
 int fg(char **args, node *head)
 {
-  pid_t wpid;
   int status = 1;
   int pos = atoi(*args);
   node aux = getNode(head, pos);
@@ -346,7 +342,7 @@ int fg(char **args, node *head)
       aux->status = running;
       do
       {
-        wpid = waitpid(aux->pid, &status, WUNTRACED);
+        waitpid(aux->pid, &status, WUNTRACED);
       } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
       if (aux->status == running)
       {
@@ -371,7 +367,7 @@ int fg(char **args, node *head)
     aux->status = running;
     do
     {
-      wpid = waitpid(aux->pid, &status, WUNTRACED);
+      waitpid(aux->pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status) && aux->status == running);
     if (aux->status == running)
     {
@@ -400,7 +396,7 @@ int removeChar(char *s, char c, int n)
 
   while (letter != n)
   {
-    if (s[i] != NULL && s[i] != ' ')
+    if (s[i] != '\0' && s[i] != ' ')
     {
       letter++;
     }

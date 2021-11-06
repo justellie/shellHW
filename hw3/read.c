@@ -6,6 +6,7 @@
 node HEAD = NULL; //list of jobs
 void sigtstp_handler(int sig)
 {
+        printf("\n");
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
@@ -18,14 +19,18 @@ void sigtstp_handler(int sig)
                                 size--;
                         }
                 }
-                
-                aux->status = stopped;
-                kill(aux->pid, SIGTSTP);
+                if (size>0)
+                {
+                        aux->status = stopped;
+                        kill(aux->pid, SIGTSTP);
+                }
+
         }
 }
 
 void sigint_handler(int sig)
 {
+        printf("\n");
         if (HEAD != NULL)
         {
                 int size = getSize(&HEAD);
@@ -45,6 +50,8 @@ void sigint_handler(int sig)
                 }
                 if (size>0)
                 {
+                        printf("[%d] %d terminated by signal %d \n",aux->pos, aux->pid, SIGINT);
+
                         kill(aux->pid, SIGTERM);
                         if (aux->status == running)
                         {
@@ -92,7 +99,6 @@ void shellLoop(void)
 
         int status;
         char *command_line;
-        char *s;
         char **arguments; //pointer to args
 
         status = 1;
